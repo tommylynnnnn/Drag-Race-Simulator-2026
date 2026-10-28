@@ -108,8 +108,11 @@ function handleSearch(val) {
 
 function selectQueen(name) {
   const queen = ALL_QUEENS.find(q => q.name === name);
-  if (queen) {
+  // Ensure queen is selected only once
+  if (queen && !selectedQueens.some(sq => sq.name === name)) {
     selectedQueens.push(queen);
+    document.getElementById("queen-search").value = "";
+    document.getElementById("search-results").innerHTML = "";
     render();
   }
 }
@@ -158,7 +161,6 @@ function generateEpisodeData() {
   let safe = shuffled.slice(6);
 
   let topBottoms = [win, high1, high2, low, btm1, btm2].filter(Boolean);
-
   let winnerPerformance = [win, high1, high2].filter(Boolean);
   let goodPerformance = [low, btm1, btm2, ...safe].filter(Boolean);
 
@@ -183,19 +185,23 @@ function generateEpisodeData() {
 function nextStep() {
   if (episodeStep < 6) {
     episodeStep++;
-  } else {
-    trackRecordHistory[currentEpResults.win.name].push("WIN");
-    currentEpResults.highs.forEach(q => trackRecordHistory[q.name].push("HIGH"));
-    currentEpResults.safe.forEach(q => trackRecordHistory[q.name].push("SAFE"));
-    if (currentEpResults.low) trackRecordHistory[currentEpResults.low.name].push("LOW");
-    if (currentEpResults.saved) trackRecordHistory[currentEpResults.saved.name].push("BTM2");
     
-    if (currentEpResults.eliminated) {
-      trackRecordHistory[currentEpResults.eliminated.name].push("ELIM");
-      activeQueens = activeQueens.filter(q => q.name !== currentEpResults.eliminated.name);
-      eliminatedQueens.push(currentEpResults.eliminated);
+    // Record results immediately after the lipsync results (Step 5) 
+    // so they show up on step 6 (Track Record) for the current episode!
+    if (episodeStep === 6) {
+      trackRecordHistory[currentEpResults.win.name].push("WIN");
+      currentEpResults.highs.forEach(q => trackRecordHistory[q.name].push("HIGH"));
+      currentEpResults.safe.forEach(q => trackRecordHistory[q.name].push("SAFE"));
+      if (currentEpResults.low) trackRecordHistory[currentEpResults.low.name].push("LOW");
+      if (currentEpResults.saved) trackRecordHistory[currentEpResults.saved.name].push("BTM2");
+      
+      if (currentEpResults.eliminated) {
+        trackRecordHistory[currentEpResults.eliminated.name].push("ELIM");
+        activeQueens = activeQueens.filter(q => q.name !== currentEpResults.eliminated.name);
+        eliminatedQueens.push(currentEpResults.eliminated);
+      }
     }
-
+  } else {
     if (activeQueens.length <= 3) {
       episodeStep = 7; 
     } else {
@@ -218,7 +224,7 @@ function renderSimulatorScreen(app) {
         <div class="avatar-group" style="margin-top:20px;">
           ${activeQueens.map(q => `<img class="avatar-circle" src="${q.image}">`).join('')}
         </div>
-        <p class="result-text" style="margin-top:15px;">Congratulation to our final queens!</p>
+        <p class="result-text" style="margin-top:15px;">Congratulations to our final queens!</p>
         ${renderTrackRecord()}
         <button class="btn btn-primary" onclick="currentScreen='cast'; render();" style="margin-top:20px;">Restart Simulation</button>
       </div>
@@ -273,7 +279,7 @@ function renderSimulatorScreen(app) {
         content = `
           <div class="header-banner">Placements</div>
           <div class="stage-card">
-            <div class="avatar-circle-wrapper" style="margin-bottom:10px;">
+            <div style="margin-bottom:10px;">
               <img class="avatar-circle" src="${currentEpResults.win.image}">
             </div>
             <p class="result-text"><strong>${currentEpResults.win.name}</strong>, condragulations, you're the winner of today's challenge!</p>
@@ -307,11 +313,11 @@ function renderSimulatorScreen(app) {
         content = `
           <div class="header-banner">I've made my decision.</div>
           <div class="stage-card">
-            <div class="avatar-circle-wrapper" style="margin-bottom:10px;">
+            <div style="margin-bottom:10px;">
               <img class="avatar-circle" src="${currentEpResults.saved.image}">
             </div>
             <p class="result-text"><strong>${currentEpResults.saved.name}</strong>, shantay you stay.</p>
-            <div class="avatar-circle-wrapper" style="margin-bottom:10px;">
+            <div style="margin-bottom:10px;">
               <img class="avatar-circle" src="${currentEpResults.eliminated.image}">
             </div>
             <p class="result-text"><strong>${currentEpResults.eliminated.name}</strong>, sashay away...</p>
@@ -321,7 +327,7 @@ function renderSimulatorScreen(app) {
         break;
       case 6: // Track Record Table
         content = `
-          <div class="header-banner">Track Record</div>
+          <div class="header-banner">Track Record (Episode ${episodeNumber})</div>
           <div class="stage-card">
             ${renderTrackRecord()}
             <button class="btn btn-primary" onclick="nextStep()" style="margin-top:20px;">Next Episode</button>
